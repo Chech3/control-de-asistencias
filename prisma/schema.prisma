@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+  // Elimina la línea de output para usar la ubicación por defecto
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Estudiante {
+  id          Int          @id @default(autoincrement())
+  nombre      String
+  grado       String
+  seccion     String
+  creadoEn    DateTime     @default(now())
+  asistencias Asistencia[]
+}
+
+model Profesor {
+  id          Int          @id @default(autoincrement())
+  nombre      String
+  materia     String
+  creadoEn    DateTime     @default(now())
+  asistencias Asistencia[]
+}
+
+model Obrero {
+  id          Int          @id @default(autoincrement())
+  nombre      String
+  area        String
+  creadoEn    DateTime     @default(now())
+  asistencias Asistencia[]
+}
+
+model Asistencia {
+  id           Int        @id @default(autoincrement())
+  fecha        DateTime   @default(now())
+  presente     Boolean
+  
+  // Relación polimórfica
+  tipoPersona  String     // "estudiante", "profesor", "obrero"
+  
+  // Relaciones opcionales
+  estudianteId Int?
+  estudiante   Estudiante? @relation(fields: [estudianteId], references: [id])
+  
+  profesorId   Int?
+  profesor     Profesor?   @relation(fields: [profesorId], references: [id])
+  
+  obreroId     Int?
+  obrero       Obrero?     @relation(fields: [obreroId], references: [id])
+}
