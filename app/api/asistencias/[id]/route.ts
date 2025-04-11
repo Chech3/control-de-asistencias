@@ -1,12 +1,19 @@
-import { NextResponse } from "next/server"
-import prisma from "@/lib/prisma"
+import { type NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+
+// Utilidad para extraer el ID desde la URL
+function getIdFromRequest(request: NextRequest): number | null {
+  const idParam = request.nextUrl.pathname.split("/").pop()
+  const id = Number.parseInt(idParam || "")
+  return isNaN(id) ? null : id
+}
 
 // GET /api/asistencias/[id] - Obtener una asistencia por ID
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest) {
   try {
-    const id = Number.parseInt(params.id)
+    const id = getIdFromRequest(request)
 
-    if (isNaN(id)) {
+    if (id === null) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 })
     }
 
@@ -31,11 +38,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 // PUT /api/asistencias/[id] - Actualizar una asistencia
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest) {
   try {
-    const id = Number.parseInt(params.id)
+    const id = getIdFromRequest(request)
 
-    if (isNaN(id)) {
+    if (id === null) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 })
     }
 
@@ -45,7 +52,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 })
     }
 
-    // Verificar que existe la persona según el tipo
     let personaExiste = false
 
     if (tipoPersona === "estudiante" && estudianteId) {
@@ -69,16 +75,30 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Persona no encontrada" }, { status: 404 })
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data: any = {
+      tipoPersona,
+      fecha: fecha ? new Date(fecha) : undefined,
+      presente,
+    }
+
+    if (tipoPersona === "estudiante") {
+      data.estudianteId = Number(estudianteId)
+      data.profesorId = null
+      data.obreroId = null
+    } else if (tipoPersona === "profesor") {
+      data.estudianteId = null
+      data.profesorId = Number(profesorId)
+      data.obreroId = null
+    } else if (tipoPersona === "obrero") {
+      data.estudianteId = null
+      data.profesorId = null
+      data.obreroId = Number(obreroId)
+    }
+
     const asistencia = await prisma.asistencia.update({
       where: { id },
-      data: {
-        tipoPersona,
-        estudianteId: tipoPersona === "estudiante" ? Number(estudianteId) : null,
-        profesorId: tipoPersona === "profesor" ? Number(profesorId) : null,
-        obreroId: tipoPersona === "obrero" ? Number(obreroId) : null,
-        fecha: fecha ? new Date(fecha) : undefined,
-        presente,
-      },
+      data,
       include: {
         estudiante: true,
         profesor: true,
@@ -94,11 +114,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 // DELETE /api/asistencias/[id] - Eliminar una asistencia
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest) {
   try {
-    const id = Number.parseInt(params.id)
+    const id = getIdFromRequest(request)
 
-    if (isNaN(id)) {
+    if (id === null) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 })
     }
 

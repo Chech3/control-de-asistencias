@@ -1,12 +1,19 @@
-import { NextResponse } from "next/server"
-import prisma from "@/lib/prisma"
+import { NextResponse, type NextRequest } from "next/server"
+import { prisma } from "@/lib/prisma"
 
-// GET /api/profesores/[id] - Obtener un profesor por ID
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+// Utilidad para extraer el ID desde la URL
+function getIdFromRequest(request: NextRequest): number | null {
+  const idParam = request.nextUrl.pathname.split("/").pop()
+  const id = Number.parseInt(idParam || "")
+  return isNaN(id) ? null : id
+}
+
+// GET /api/profesores/[id]
+export async function GET(request: NextRequest) {
   try {
-    const id = Number.parseInt(params.id)
+    const id = getIdFromRequest(request)
 
-    if (isNaN(id)) {
+    if (id === null) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 })
     }
 
@@ -25,12 +32,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-// PUT /api/profesores/[id] - Actualizar un profesor
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+// PUT /api/profesores/[id]
+export async function PUT(request: NextRequest) {
   try {
-    const id = Number.parseInt(params.id)
+    const id = getIdFromRequest(request)
 
-    if (isNaN(id)) {
+    if (id === null) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 })
     }
 
@@ -55,15 +62,21 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-// DELETE /api/profesores/[id] - Eliminar un profesor
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+// DELETE /api/profesores/[id]
+export async function DELETE(request: NextRequest) {
   try {
-    const id = Number.parseInt(params.id)
+    const id = getIdFromRequest(request)
 
-    if (isNaN(id)) {
+    if (id === null) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 })
     }
 
+    // Primero eliminamos las asistencias relacionadas
+    await prisma.asistencia.deleteMany({
+      where: { profesorId: id },
+    })
+
+    // Luego eliminamos el profesor
     await prisma.profesor.delete({
       where: { id },
     })

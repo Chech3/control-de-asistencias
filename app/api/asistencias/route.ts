@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
 // GET /api/asistencias - Obtener todas las asistencias
-export async function GET(request: Request) {
+export async function GET() {
   try {
     console.log("Iniciando consulta de asistencias")
 
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     console.log(`Asistencias encontradas: ${asistencias.length}`)
     return NextResponse.json(asistencias)
   } catch (error) {
-    console.error("Error al obtener asistencias:", error)
+    console.error("Error:", (error as Error).message)
     return NextResponse.json({ error: "Error al obtener asistencias", details: String(error) }, { status: 500 })
   }
 }
@@ -57,6 +57,7 @@ export async function POST(request: Request) {
     }
 
     // Crear la asistencia
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = {
       tipoPersona,
       fecha: fecha ? new Date(fecha) : new Date(),
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(asistencia, { status: 201 })
   } catch (error) {
-    console.error("Error al crear asistencia:", error)
+    console.error("Error:", (error as Error).message)
     return NextResponse.json({ error: "Error al crear asistencia" }, { status: 500 })
   }
 }

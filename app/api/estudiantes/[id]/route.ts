@@ -1,12 +1,19 @@
-import { NextResponse } from "next/server"
-import prisma from "@/lib/prisma"
+import { NextResponse, type NextRequest } from "next/server"
+import { prisma } from "@/lib/prisma"
 
-// GET /api/estudiantes/[id] - Obtener un estudiante por ID
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+// Utilidad para extraer el ID desde la URL
+function getIdFromRequest(request: NextRequest): number | null {
+  const idParam = request.nextUrl.pathname.split("/").pop()
+  const id = Number.parseInt(idParam || "")
+  return isNaN(id) ? null : id
+}
+
+// GET /api/estudiantes/[id]
+export async function GET(request: NextRequest) {
   try {
-    const id = Number.parseInt(params.id)
+    const id = getIdFromRequest(request)
 
-    if (isNaN(id)) {
+    if (id === null) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 })
     }
 
@@ -28,12 +35,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-// PUT /api/estudiantes/[id] - Actualizar un estudiante
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+// PUT /api/estudiantes/[id]
+export async function PUT(request: NextRequest) {
   try {
-    const id = Number.parseInt(params.id)
+    const id = getIdFromRequest(request)
 
-    if (isNaN(id)) {
+    if (id === null) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 })
     }
 
@@ -59,23 +66,21 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-// DELETE /api/estudiantes/[id] - Eliminar un estudiante
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+// DELETE /api/estudiantes/[id]
+export async function DELETE(request: NextRequest) {
   try {
-    const id = Number.parseInt(params.id)
+    const id = getIdFromRequest(request)
 
-    if (isNaN(id)) {
+    if (id === null) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 })
     }
 
-    // Primero eliminamos las asistencias relacionadas
+    // Eliminar asistencias primero
     await prisma.asistencia.deleteMany({
-      where: {
-        estudianteId: id,
-      },
+      where: { estudianteId: id },
     })
 
-    // Luego eliminamos el estudiante
+    // Eliminar estudiante
     await prisma.estudiante.delete({
       where: { id },
     })
